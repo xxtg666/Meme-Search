@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meme Search</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #5865F2;
+            --secondary-color: #7289DA;
+            --dark-color: #2C2F33;
+            --darker-color: #23272A;
+            --light-color: #99AAB5;
+            --bg-color: #36393F;
+            --card-bg: #2F3136;
+            --text-color: #FFFFFF;
+            --text-muted: #72767D;
+            --border-color: #202225;
+            --shadow: 0 1px 3px rgba(0,0,0,0.3);
+            --radius: 8px;
+        }
+
+        html {
+            scrollbar-width: thin;
+            scrollbar-color: var(--secondary-color) var(--darker-color);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        /* 自定义滚动条样式 (WebKit) */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--darker-color);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background-color: var(--secondary-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: var(--primary-color);
+        }
+
+        /* 头部样式 */
+        header {
+            background: var(--darker-color);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow);
+        }
+
+        .header-content {
+            max-width: auto;
+            margin: 0 auto;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .stats {
+            margin-left: auto;
+            font-size: 0.9rem;
+            color: var(--light-color);
+        }
+
+        /* 搜索栏 */
+        .search-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0 1rem 1rem;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            color: var(--text-color);
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background: var(--card-bg);
+        }
+
+        .search-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .search-toggle {
+            display: none; /* 在PC端隐藏 */
+        }
+
+        .btn:hover {
+            background: var(--secondary-color);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        /* 主内容区 */
+        main {
+            margin-top: 120px;
+            padding-bottom: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        /* 瀑布流布局 - PC端三列 */
+        .feed {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            align-items: start;
+        }
+
+        @media (max-width: 1024px) {
+            .feed {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .feed {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .meme-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: all 0.2s ease;
+        }
+
+        .meme-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        .meme-header {
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .meme-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .meme-time {
+            margin-left: auto;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .meme-image {
+            width: 100%;
+            max-height: 500px;
+            object-fit: contain;
+            background: var(--darker-color);
+            cursor: pointer;
+        }
+
+        .meme-content {
+            padding: 1rem;
+        }
+
+        .meme-text {
+            background: var(--bg-color);
+            padding: 0.75rem;
+            border-radius: var(--radius);
+            margin-bottom: 0.75rem;
+            font-style: italic;
+            color: var(--light-color);
+            border-left: 3px solid var(--primary-color);
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .meme-text.collapsed {
+            max-height: 3em;
+            overflow: hidden;
+        }
+
+        .meme-text.collapsed::after {
+            content: '▼';
+            position: absolute;
+            bottom: 0;
+            right: 0.75rem;
+            background: var(--bg-color);
+            color: var(--primary-color);
+            font-style: normal;
+            font-size: 0.9rem;
+        }
+
+        .meme-text:hover {
+            background: var(--darker-color);
+        }
+
+        .meme-description {
+            color: var(--text-color);
+            margin-bottom: 0.75rem;
+            line-height: 1.5;
+        }
+
+        .meme-footer {
+            padding: 0 1rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            background: var(--bg-color);
+            color: var(--light-color);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .tag:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .discord-link {
+            margin-left: auto;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .discord-link:hover {
+            color: var(--secondary-color);
+        }
+
+        /* 加载状态 */
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-muted);
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* 回到顶部按钮 */
+        .back-to-top {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 50px;
+            height: 50px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .back-to-top:hover {
+            background: var(--secondary-color);
+            transform: translateY(-3px);
+        }
+
+        .back-to-top.show {
+            display: flex;
+        }
+
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            position: relative;
+            margin: 2rem auto;
+            max-width: 90%;
+            max-height: 90vh;
+        }
+
+        .modal-image {
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .close-modal:hover {
+            background: rgba(0,0,0,0.9);
+        }
+
+        /* 进度弹窗 */
+        .progress-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+            overflow-y: auto;
+        }
+
+        .progress-content {
+            background: var(--card-bg);
+            margin: 2rem auto;
+            padding: 2rem;
+            border-radius: var(--radius);
+            max-width: 600px;
+            width: 90%;
+            position: relative;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .progress-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        .progress-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .close-progress {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .close-progress:hover {
+            color: var(--text-color);
+        }
+
+        .progress-status {
+            background: var(--bg-color);
+            padding: 1rem;
+            border-radius: var(--radius);
+            margin-bottom: 1rem;
+        }
+
+        .progress-bar {
+            background: var(--border-color);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-fill {
+            background: var(--primary-color);
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-logs {
+            background: var(--darker-color);
+            border-radius: var(--radius);
+            padding: 1rem;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .log-entry {
+            margin-bottom: 0.5rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .log-time {
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+
+        .log-message {
+            color: var(--text-color);
+        }
+
+        .progress-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .btn-secondary {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--card-bg);
+            border-color: var(--primary-color);
+        }
+
+        .progress-icon {
+            top: 1rem;
+            right: 1rem;
+            background: var(--card-bg);
+            color: var(--primary-color);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: all 0.2s ease;
+            z-index: 100;
+        }
+
+        .progress-icon:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .progress-icon.active {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(88, 101, 242, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(88, 101, 242, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(88, 101, 242, 0);
+            }
+        }
+
+        /* 提示消息 */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--darker-color);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            transition: transform 0.3s ease;
+            z-index: 3000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast.success {
+            background: #43B581;
+        }
+
+        .toast.error {
+            background: #F04747;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-wrap: wrap;
+                position: relative;
+            }
+
+            .header-content.search-active h1,
+            .header-content.search-active .progress-icon,
+            .header-content.search-active .search-toggle {
+                display: none;
+            }
+
+            .header-content.search-active .search-box {
+                display: flex;
+                width: 100%;
+            }
+
+            .stats {
+                display: none; /* 在移动端隐藏统计信息 */
+            }
+
+            .search-box {
+                order: 3; /* 让搜索框在换行后显示在最下方 */
+                flex-basis: 100%;
+                margin-top: 0.5rem;
+                display: none; /* 在移动端默认隐藏 */
+            }
+
+            .search-toggle {
+                display: flex;
+                padding: 0.75rem;
+                margin-left: auto; /* 移动到右侧 */
+            }
+
+            main {
+                margin-top: 80px; /* 调整主内容区域的上边距 */
+            }
+
+            .progress-icon {
+                top: auto;
+                bottom: 5rem;
+            }
+
+            .feed {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content" id="headerContent">
+            <h1>
+                <span>🎭</span>
+                <span>Meme Search</span>
+            </h1>
+            <button class="btn search-toggle" id="searchToggle" onclick="toggleSearch()">
+                <span>🔍</span>
+            </button>
+            <div class="progress-icon" id="progressIcon" onclick="showProgress()" title="查看进度">📊</div>
+            <div class="stats" id="stats">
+                加载中...
+            </div>
+            <div class="search-box">
+                <input type="text" class="search-input" id="searchInput" placeholder="搜索梗图...">
+                <button class="btn" onclick="search();toggleSearch()">
+                    <span>🔍</span>
+                    <span>搜索</span>
+                </button>
+            </div>
+        </div>
+        
+    </header>
+
+    <main>
+        <div class="container">
+            <div class="feed" id="feed"></div>
+            <div class="loading" id="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>加载中...</p>
+            </div>
+            <div class="empty-state" id="emptyState" style="display: none;">
+                <div class="empty-icon">😢</div>
+                <p>暂无梗图</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- 进度图标 -->
+    
+
+    <!-- 回到顶部按钮 -->
+    <button class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</button>
+
+    <!-- 图片查看模态框 -->
+    <div class="modal" id="imageModal" onclick="closeModal(event)">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModal(event)">×</button>
+            <img class="modal-image" id="modalImage" src="" alt="">
+        </div>
+    </div>
+
+    <!-- 进度弹窗 -->
+    <div class="progress-modal" id="progressModal">
+        <div class="progress-content">
+            <div class="progress-header">
+                <h2 class="progress-title">任务进度</h2>
+                <button class="close-progress" onclick="closeProgress()">×</button>
+            </div>
+            
+            <div class="progress-status" id="progressStatus">
+                <div>状态: <span id="taskStatus">空闲</span></div>
+                <div>当前任务: <span id="currentTask">无</span></div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+                </div>
+                <div>进度: <span id="progressText">0/0</span> (<span id="progressPercent">0%</span>)</div>
+                <div>错误数: <span id="errorCount">0</span></div>
+            </div>
+            
+            <h3 style="margin-top: 1.5rem; margin-bottom: 0.5rem; color: var(--text-color);">运行日志</h3>
+            <div class="progress-logs" id="progressLogs"></div>
+        </div>
+    </div>
+
+    <!-- 提示消息 -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const API_BASE = '/api';
+        let currentSearch = '';
+        let lastId = null;
+        let isLoading = false;
+        let hasMore = true;
+        let progressInterval = null;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStats();
+            loadMemes();
+            setupInfiniteScroll();
+            setupBackToTop();
+            checkProgress();
+            
+            // 定时刷新统计信息
+            setInterval(loadStats, 60000);
+            // 定时检查进度
+            setInterval(checkProgress, 5000);
+        });
+
+        // 检查进度
+        async function checkProgress() {
+            try {
+                const response = await fetch(`${API_BASE}/progress`);
+                const progress = await response.json();
+                
+                const icon = document.getElementById('progressIcon');
+                if (progress.status === 'running') {
+                    icon.classList.add('active');
+                } else {
+                    icon.classList.remove('active');
+                }
+            } catch (error) {
+                console.error('检查进度失败:', error);
+            }
+        }
+
+        // 显示进度弹窗
+        async function showProgress() {
+            document.getElementById('progressModal').style.display = 'block';
+            updateProgress();
+            
+            // 开始定时更新进度
+            if (progressInterval) {
+                clearInterval(progressInterval);
+            }
+            progressInterval = setInterval(updateProgress, 1000);
+        }
+
+        // 关闭进度弹窗
+        function closeProgress() {
+            document.getElementById('progressModal').style.display = 'none';
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+        }
+
+        // 更新进度信息
+        async function updateProgress() {
+            try {
+                const response = await fetch(`${API_BASE}/progress`);
+                const progress = await response.json();
+                
+                // 更新状态
+                document.getElementById('taskStatus').textContent = 
+                    progress.status === 'running' ? '运行中' : '空闲';
+                document.getElementById('currentTask').textContent = 
+                    progress.current_task || '无';
+                
+                // 更新进度条
+                const percent = progress.progress_percent || 0;
+                document.getElementById('progressBar').style.width = percent + '%';
+                document.getElementById('progressText').textContent = 
+                    `${progress.processed_items}/${progress.total_items}`;
+                document.getElementById('progressPercent').textContent = 
+                    percent.toFixed(1) + '%';
+                document.getElementById('errorCount').textContent = 
+                    progress.errors || 0;
+                
+                // 更新日志
+                const logsContainer = document.getElementById('progressLogs');
+                logsContainer.innerHTML = '';
+                
+                if (progress.logs && progress.logs.length > 0) {
+                    progress.logs.reverse().forEach(log => {
+                        const logEntry = document.createElement('div');
+                        logEntry.className = 'log-entry';
+                        
+                        // 使用本地时间
+                        const localDate = utcToLocal(log.time);
+                        const time = localDate.toLocaleTimeString('zh-CN');
+                        
+                        logEntry.innerHTML = `
+                            <span class="log-time">[${time}]</span>
+                            <span class="log-message">${log.message}</span>
+                        `;
+                        
+                        logsContainer.appendChild(logEntry);
+                    });
+                }
+            } catch (error) {
+                console.error('更新进度失败:', error);
+            }
+        }
+
+        // 加载统计信息
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_BASE}/stats`);
+                const stats = await response.json();
+                
+                document.getElementById('stats').innerHTML = `
+                    总数: ${stats.total} | 成功: ${stats.success} | 失败: ${stats.failed}
+                `;
+            } catch (error) {
+                console.error('加载统计信息失败:', error);
+            }
+        }
+
+        // 加载梗图
+        async function loadMemes(reset = false) {
+            if (isLoading || (!hasMore && !reset)) return;
+            
+            isLoading = true;
+            const loading = document.getElementById('loading');
+            const feed = document.getElementById('feed');
+            const empty = document.getElementById('emptyState');
+            
+            if (reset) {
+                lastId = null;
+                hasMore = true;
+                feed.innerHTML = '';
+            }
+            
+            loading.style.display = 'block';
+            empty.style.display = 'none';
+
+            try {
+                let url = `${API_BASE}/memes?page_size=12`;
+                if (lastId) {
+                    url += `&last_id=${lastId}`;
+                }
+                if (currentSearch) {
+                    url = `${API_BASE}/search?q=${encodeURIComponent(currentSearch)}&page_size=12`;
+                    if (lastId) {
+                        url += `&last_id=${lastId}`;
+                    }
+                }
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                loading.style.display = 'none';
+
+                if (data.items.length === 0 && !lastId) {
+                    empty.style.display = 'block';
+                } else {
+                    renderMemes(data.items);
+                    hasMore = data.has_more;
+                    
+                    // 更新lastId为最后一个项目的ID
+                    if (data.items.length > 0) {
+                        lastId = data.items[data.items.length - 1].id;
+                    }
+                }
+            } catch (error) {
+                console.error('加载失败:', error);
+                loading.style.display = 'none';
+                showToast('加载失败，请重试', 'error');
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        // 渲染梗图
+        function renderMemes(memes) {
+            const feed = document.getElementById('feed');
+            
+            memes.forEach(meme => {
+                const card = document.createElement('div');
+                card.className = 'meme-card';
+                
+                // 转换时间
+                const localDate = utcToLocal(meme.upload_time);
+                const timeAgo = getTimeAgo(localDate);
+                
+                // 生成唯一ID用于文字折叠
+                const textId = `text-${meme.id}`;
+                
+                card.innerHTML = `
+                    <div class="meme-header">
+                        <div class="meme-title">${meme.title}</div>
+                        <div class="meme-time">${timeAgo}</div>
+                    </div>
+                    <img class="meme-image" src="${meme.filepath}" alt="${meme.title}" onclick="viewImage('${meme.filepath}')" loading="lazy">
+                    <div class="meme-content">
+                        ${meme.text_content ? `<div class="meme-text collapsed" id="${textId}" onclick="toggleText('${textId}')">"${meme.text_content}"</div>` : ''}
+                        <div class="meme-description">${meme.description}</div>
+                    </div>
+                    <div class="meme-footer">
+                        ${meme.tags.map(tag => `<span class="tag" onclick="searchTag('${tag}')">${tag}</span>`).join('')}
+                        ${meme.discord_url ? `<a href="${meme.discord_url}" target="_blank" class="discord-link">📍</a>` : ''}
+                    </div>
+                `;
+                
+                feed.appendChild(card);
+            });
+        }
+
+        // 切换文字内容展开/折叠
+        function toggleText(textId) {
+            const textElement = document.getElementById(textId);
+            if (textElement) {
+                textElement.classList.toggle('collapsed');
+            }
+        }
+
+        // 搜索功能
+        function search() {
+            const searchInput = document.getElementById('searchInput');
+            currentSearch = searchInput.value.trim();
+            loadMemes(true);
+        }
+
+        // 搜索标签
+        function searchTag(tag) {
+            document.getElementById('searchInput').value = tag;
+            currentSearch = tag;
+            loadMemes(true);
+            window.scrollTo(0, 0);
+        }
+
+        // 查看大图
+        function viewImage(src) {
+            document.getElementById('modalImage').src = src;
+            document.getElementById('imageModal').style.display = 'block';
+        }
+
+        // 关闭模态框
+        function closeModal(event) {
+            if (event.target.className === 'modal' || event.target.className === 'close-modal') {
+                document.getElementById('imageModal').style.display = 'none';
+            }
+        }
+
+        // 无限滚动
+        function setupInfiniteScroll() {
+            let ticking = false;
+            
+            function handleScroll() {
+                if (!ticking) {
+                    window.requestAnimationFrame(() => {
+                        const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+                        
+                        if (scrollTop + clientHeight >= scrollHeight - 200) {
+                            loadMemes();
+                        }
+                        
+                        ticking = false;
+                    });
+                    
+                    ticking = true;
+                }
+            }
+            
+            window.addEventListener('scroll', handleScroll);
+        }
+
+        // 回到顶部按钮
+        function setupBackToTop() {
+            const button = document.getElementById('backToTop');
+            
+            window.addEventListener('scroll', () => {
+                if (window.pageYOffset > 300) {
+                    button.classList.add('show');
+                } else {
+                    button.classList.remove('show');
+                }
+            });
+        }
+
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+
+        // 时间转换（考虑UTC+8）
+        function getTimeAgo(date) {
+            const now = new Date();
+            const seconds = Math.floor((now - date) / 1000) - 28800;
+            
+            let interval = seconds / 31536000;
+            if (interval > 1) return Math.floor(interval) + ' 年前';
+            
+            interval = seconds / 2592000;
+            if (interval > 1) return Math.floor(interval) + ' 月前';
+            
+            interval = seconds / 86400;
+            if (interval > 1) return Math.floor(interval) + ' 天前';
+            
+            interval = seconds / 3600;
+            if (interval > 1) return Math.floor(interval) + ' 小时前';
+            
+            interval = seconds / 60;
+            if (interval > 1) return Math.floor(interval) + ' 分钟前';
+            
+            return '刚刚';
+        }
+
+        // 将UTC时间转换为本地时间（UTC+8）
+        function utcToLocal(utcTimeStr) {
+            // 确保时间字符串包含时区信息
+            if (!utcTimeStr.endsWith('Z') && !utcTimeStr.includes('+') && !utcTimeStr.includes('-')) {
+                utcTimeStr += 'Z';
+            }
+            return new Date(utcTimeStr);
+        }
+
+        // 显示提示消息
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast show ${type}`;
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // 搜索框回车事件
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                search();
+            }
+        });
+
+        // ESC键关闭模态框
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.getElementById('imageModal').style.display = 'none';
+                closeProgress();
+            }
+        });
+
+        // 点击弹窗外部关闭
+        document.getElementById('progressModal').addEventListener('click', (e) => {
+            if (e.target.className === 'progress-modal') {
+                closeProgress();
+            }
+        });
+
+        // 移动端搜索切换
+        function toggleSearch() {
+            const headerContent = document.getElementById('headerContent');
+            headerContent.classList.toggle('search-active');
+            const searchInput = document.getElementById('searchInput');
+            if (headerContent.classList.contains('search-active')) {
+                searchInput.focus();
+            }
+        }
+    </script>
+</body>
+</html>
