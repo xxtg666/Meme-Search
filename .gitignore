@@ -1,2 +1,5 @@
 __pycache__/
 memes.txt
+memes.db
+meme_search.log
+uploads/

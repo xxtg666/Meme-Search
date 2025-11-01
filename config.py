@@ -24,3 +24,6 @@ MAX_RETRY_ATTEMPTS = 24  # 最大重试次数
 # 服务器配置
 API_HOST = "0.0.0.0"
 API_PORT = 5000
+
+# 管理员鉴权
+ADMIN_SECRET_KEY = "your_admin_secret_key_change_this"  # 请修改为强密码

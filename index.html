@@ -163,6 +163,64 @@
             padding: 0 1rem;
         }
 
+        /* 顶栏排序按钮 */
+        .sort-buttons-header {
+            display: flex;
+            gap: 0;
+            background: var(--bg-color);
+            border-radius: 6px;
+            padding: 2px;
+            border: 1px solid var(--border-color);
+        }
+
+        .sort-btn-header {
+            padding: 0.4rem 0.8rem;
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .sort-btn-header:hover {
+            color: var(--text-color);
+            background: var(--card-bg);
+        }
+
+        .sort-btn-header.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        /* 移动端排序切换按钮 */
+        .sort-toggle-mobile {
+            display: none;
+            width: 40px;
+            height: 40px;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            color: var(--text-color);
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sort-toggle-mobile:hover {
+            background: var(--card-bg);
+            border-color: var(--primary-color);
+        }
+
+        .sort-toggle-mobile:active {
+            transform: scale(0.95);
+        }
+
         /* 瀑布流布局 - PC端三列 */
         .feed {
             display: grid;
@@ -615,7 +673,10 @@
 
             .header-content.search-active h1,
             .header-content.search-active .progress-icon,
-            .header-content.search-active .search-toggle {
+            .header-content.search-active .search-toggle,
+            .header-content.search-active .sort-buttons-header,
+            .header-content.search-active .sort-toggle-mobile,
+            .header-content.search-active .stats {
                 display: none;
             }
 
@@ -629,7 +690,7 @@
             }
 
             .search-box {
-                order: 3; /* 让搜索框在换行后显示在最下方 */
+                order: 4; /* 让搜索框在换行后显示在最下方 */
                 flex-basis: 100%;
                 margin-top: 0.5rem;
                 display: none; /* 在移动端默认隐藏 */
@@ -639,6 +700,15 @@
                 display: flex;
                 padding: 0.75rem;
                 margin-left: auto; /* 移动到右侧 */
+            }
+
+            .sort-buttons-header {
+                display: none; /* 移动端隐藏桌面按钮组 */
+            }
+
+            .sort-toggle-mobile {
+                display: flex;
+                order: 2;
             }
 
             main {
@@ -666,6 +736,13 @@
             <button class="btn search-toggle" id="searchToggle" onclick="toggleSearch()">
                 <span>🔍</span>
             </button>
+            <button class="sort-toggle-mobile" id="sortToggle" onclick="toggleSortMobile()" title="切换排序">
+                <span id="sortIcon">⏰</span>
+            </button>
+            <div class="sort-buttons-header">
+                <button class="sort-btn-header active" data-sort="time" onclick="changeSortOrder('time')">⏰ 最新</button>
+                <button class="sort-btn-header" data-sort="random" onclick="changeSortOrder('random')">🎲 随机</button>
+            </div>
             <div class="progress-icon" id="progressIcon" onclick="showProgress()" title="查看进度">📊</div>
             <div class="stats" id="stats">
                 加载中...
@@ -742,6 +819,7 @@
         let isLoading = false;
         let hasMore = true;
         let progressInterval = null;
+        let currentSortOrder = 'time'; // 'time' 或 'random'
 
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
@@ -876,8 +954,8 @@
             empty.style.display = 'none';
 
             try {
-                let url = `${API_BASE}/memes?page_size=12`;
-                if (lastId) {
+                let url = `${API_BASE}/memes?page_size=12&sort=${currentSortOrder}`;
+                if (lastId && currentSortOrder !== 'random') {
                     url += `&last_id=${lastId}`;
                 }
                 if (currentSearch) {
@@ -968,6 +1046,52 @@
             currentSearch = tag;
             loadMemes(true);
             window.scrollTo(0, 0);
+        }
+
+        // 切换排序顺序
+        function changeSortOrder(order) {
+            if (currentSortOrder === order) return;
+            
+            currentSortOrder = order;
+            
+            // 更新桌面按钮状态
+            document.querySelectorAll('.sort-btn-header').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.sort === order) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // 更新移动端图标
+            updateSortIcon();
+            
+            // 随机模式不支持无限滚动，清空 lastId
+            if (order === 'random') {
+                lastId = null;
+                hasMore = true;
+            }
+            
+            // 重新加载数据
+            loadMemes(true);
+            window.scrollTo(0, 0);
+        }
+
+        // 移动端切换排序
+        function toggleSortMobile() {
+            const newOrder = currentSortOrder === 'time' ? 'random' : 'time';
+            changeSortOrder(newOrder);
+        }
+
+        // 更新移动端排序图标
+        function updateSortIcon() {
+            const icon = document.getElementById('sortIcon');
+            if (currentSortOrder === 'time') {
+                icon.textContent = '⏰';
+                document.getElementById('sortToggle').title = '当前：时间顺序';
+            } else {
+                icon.textContent = '🎲';
+                document.getElementById('sortToggle').title = '当前：随机顺序';
+            }
         }
 
         // 查看大图
