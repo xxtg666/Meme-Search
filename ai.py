@@ -45,7 +45,7 @@ async def analyze_image_with_ai(image_path: str, prompt_content: str) -> MemeAna
                         ]}
                     ]
                 },
-                timeout=60.0
+                timeout=300.0
             )
 
             if response.status_code != 200:
