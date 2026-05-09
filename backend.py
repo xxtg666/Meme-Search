@@ -57,8 +57,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/uploads", StaticFiles(directory=config.UPLOAD_DIR), name="uploads")
+class CachedStaticFiles(StaticFiles):
+    """为上传图片添加缓存头，便于浏览器和 Cloudflare 缓存。"""
 
+    CACHE_CONTROL = b"public, max-age=31536000, immutable"
+    CDN_CACHE_CONTROL = b"public, max-age=31536000"
+
+    async def __call__(self, scope, receive, send):
+        async def wrap_send(message):
+            if message["type"] == "http.response.start":
+                status = message.get("status", 500)
+                headers = dict(message.get("headers", []))
+                if status in (200, 304):
+                    headers[b"cache-control"] = self.CACHE_CONTROL
+                    headers[b"cdn-cache-control"] = self.CDN_CACHE_CONTROL
+                    message["headers"] = list(headers.items())
+            await send(message)
+        await super().__call__(scope, receive, wrap_send)
+
+app.mount("/uploads", CachedStaticFiles(directory=config.UPLOAD_DIR), name="uploads")
 
 def get_db():
     db = SessionLocal()
